@@ -1,8 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSignupMutation } from "../features/auth/authApiSlice";
+import { useDispatch } from "react-redux";
+import { setCredentials } from "../features/auth/authSlice";
 
 const Signup = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [signup, { isLoading }] = useSignupMutation();
+  const [error, setError] = useState(null);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -20,8 +27,13 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here we'll add the API call later
-    console.log("Form submitted:", formData);
+    try {
+      const response = await signup(formData).unwrap();
+      dispatch(setCredentials(response));
+      navigate("/login");
+    } catch (err) {
+      setError(err.data?.message || "An error occurred during signup");
+    }
   };
 
   return (
@@ -30,6 +42,11 @@ const Signup = () => {
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
           Sign Up
         </h2>
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label
@@ -110,9 +127,10 @@ const Signup = () => {
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            disabled={isLoading}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Sign Up
+            {isLoading ? "Signing up..." : "Sign Up"}
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-600">
