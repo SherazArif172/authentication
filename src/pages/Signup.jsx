@@ -1,38 +1,43 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSignupMutation } from "../features/auth/authApiSlice";
-import { useDispatch } from "react-redux";
-import { setCredentials } from "../features/auth/authSlice";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signupSchema } from "../validation/signupSchema";
 
 const Signup = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const [signup, { isLoading }] = useSignupMutation();
-  const [error, setError] = useState(null);
 
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "customer",
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError: setFormError,
+  } = useForm({
+    resolver: zodResolver(signupSchema),
+    defaultValues: {
+      role: "",
+    },
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (data) => {
     try {
-      const response = await signup(formData).unwrap();
-      dispatch(setCredentials(response));
+      console.log('Submitting form data:', JSON.stringify(data, null, 2));
+      const response = await signup(data).unwrap();
+      console.log('Signup successful:', response);
       navigate("/login");
     } catch (err) {
-      setError(err.data?.message || "An error occurred during signup");
+      console.error('Signup error details:', {
+        status: err.status,
+        data: err.data,
+        message: err.message
+      });
+      
+      // Set form error with more detailed message
+      setFormError("root", {
+        type: "manual",
+        message: err.message || "An unexpected error occurred. Please try again later.",
+      });
     }
   };
 
@@ -42,12 +47,12 @@ const Signup = () => {
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
           Sign Up
         </h2>
-        {error && (
+        {errors.root && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
-            {error}
+            {errors.root.message}
           </div>
         )}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <label
               htmlFor="name"
@@ -58,13 +63,15 @@ const Signup = () => {
             <input
               type="text"
               id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
+              {...register("name")}
               placeholder="Enter your name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.name ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {errors.name && (
+              <p className="text-red-500 text-sm">{errors.name.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -77,13 +84,15 @@ const Signup = () => {
             <input
               type="email"
               id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
+              {...register("email")}
               placeholder="Enter your email"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.email ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {errors.email && (
+              <p className="text-red-500 text-sm">{errors.email.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -96,13 +105,15 @@ const Signup = () => {
             <input
               type="password"
               id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
+              {...register("password")}
               placeholder="Enter your password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.password ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {errors.password && (
+              <p className="text-red-500 text-sm">{errors.password.message}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -114,15 +125,18 @@ const Signup = () => {
             </label>
             <select
               id="role"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {...register("role")}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.role ? "border-red-500" : "border-gray-300"
+              }`}
             >
+              <option value="">Select Role</option>
               <option value="customer">Customer</option>
               <option value="admin">Admin</option>
             </select>
+            {errors.role && (
+              <p className="text-red-500 text-sm">{errors.role.message}</p>
+            )}
           </div>
 
           <button
